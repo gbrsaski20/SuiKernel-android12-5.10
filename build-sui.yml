@@ -1,0 +1,48 @@
+name: suikernel build
+
+on:
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: 'Variant label baked into CONFIG_LOCALVERSION'
+        required: false
+        default: 'Vanilla'
+      branch_tag:
+        description: 'Branch label (Stable / Experimental)'
+        required: false
+        default: 'Stable'
+  push:
+    branches: [suikernel-stable]
+    paths:
+      - '.github/workflows/build.yml'
+      - 'ci/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 330
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Build
+        env:
+          VARIANT: ${{ inputs.variant || 'Vanilla' }}
+          BRANCH_TAG: ${{ inputs.branch_tag || 'Stable' }}
+        run: bash ci/build.sh
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: suikernel-build
+          path: |
+            SuiKernel-*.zip
+            Image
+            build.log
+            ci-report.txt
+            out/.config
+          retention-days: 30
+          if-no-files-found: warn
